@@ -1,6 +1,6 @@
-<form class="lead-form" name="water-test" method="POST" action="/thank-you/" data-netlify="true" netlify-honeypot="company">
-  <input type="hidden" name="form-name" value="water-test">
-  <p class="visually-hidden"><label>Leave blank: <input name="company"></label></p>
+<form class="lead-form" name="water-test" method="POST" action="/api/lead">
+  <input type="hidden" name="form_name" value="Free water test">
+  <p class="visually-hidden" aria-hidden="true"><label>Leave blank: <input name="company" tabindex="-1" autocomplete="off"></label></p>
   <h3 class="lead-form__title">Book your free water test</h3>
   <p class="lead-form__sub">Takes about 15 minutes. We come to you.</p>
   <div class="form-row">
@@ -21,5 +21,6 @@
     <textarea name="message" rows="3" placeholder="Spots on dishes, dry skin, taste, scale on fixtures..."></textarea>
   </label>
   <button class="btn btn--primary btn--block btn--lg" type="submit">Schedule My Free Test</button>
+  <p class="lead-form__error" role="alert" hidden>Sorry, something went wrong. Please call us at <a href="tel:{{phoneHref}}">{{phone}}</a>.</p>
   <p class="lead-form__fine">No obligation. We'll never share your info.</p>
 </form>

@@ -29,4 +29,17 @@ Search for `PLACEHOLDER` to find content that still needs real info: reviews, ow
 npm run build     # outputs dist/
 npm start         # build + serve at http://localhost:3000
 ```
-No dependencies. Deploys as-is to Vercel (`vercel.json`) or Netlify (`netlify.toml`; the forms already use Netlify Forms).
+No dependencies.
+
+## Deploying on Vercel
+1. Import this repo in Vercel. `vercel.json` already sets the build command (`node build.js`) and output folder (`dist`).
+2. Form submissions go to the serverless function `api/lead.js`, which emails each lead through [Resend](https://resend.com) (free tier: 3,000 emails/month).
+   In **Project → Settings → Environment Variables**, add:
+
+   | Variable | Example |
+   |---|---|
+   | `RESEND_API_KEY` | `re_xxxxxxxx` (from Resend → API Keys) |
+   | `LEAD_TO_EMAIL` | `you@yourbusiness.com` (comma-separate for several) |
+   | `LEAD_FROM_EMAIL` | `Website <leads@yourdomain.com>` (the domain must be verified in Resend) |
+
+3. Redeploy after adding the variables. Until they're set, the form shows a "please call us" error instead of silently losing leads.
