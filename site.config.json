@@ -1,0 +1,27 @@
+{
+  "_note": "Everything in here is a PLACEHOLDER. Replace with real business info, then run `npm run build`.",
+  "name": "Soft Water Albuquerque",
+  "shortName": "Soft Water ABQ",
+  "tagline": "Locally owned water softener & filtration installers",
+  "phone": "(505) 555-0123",
+  "phoneHref": "+15055550123",
+  "email": "hello@softwaterabq.com",
+  "address": "123 Placeholder Ave NE",
+  "city": "Albuquerque",
+  "state": "NM",
+  "zip": "87110",
+  "hours": "Mon–Sat, 8am–6pm",
+  "license": "NM License #000000",
+  "yearFounded": "2026",
+  "domain": "https://www.softwaterabq.com",
+  "price": {
+    "softener": "$2,495",
+    "softenerRegular": "$3,995",
+    "softenerFilter": "$3,450",
+    "softenerFilterRegular": "$5,750",
+    "complete": "$4,599",
+    "completeRegular": "$7,650",
+    "ro": "$895",
+    "financing": "$59/mo"
+  }
+}

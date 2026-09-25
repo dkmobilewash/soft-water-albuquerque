@@ -1,0 +1,25 @@
+<form class="lead-form" name="water-test" method="POST" action="/thank-you/" data-netlify="true" netlify-honeypot="company">
+  <input type="hidden" name="form-name" value="water-test">
+  <p class="visually-hidden"><label>Leave blank: <input name="company"></label></p>
+  <h3 class="lead-form__title">Book your free water test</h3>
+  <p class="lead-form__sub">Takes about 15 minutes. We come to you.</p>
+  <div class="form-row">
+    <label>First name<input type="text" name="first_name" autocomplete="given-name" required></label>
+    <label>Last name<input type="text" name="last_name" autocomplete="family-name" required></label>
+  </div>
+  <label>Phone<input type="tel" name="phone" autocomplete="tel" required></label>
+  <label>Email<input type="email" name="email" autocomplete="email"></label>
+  <label>ZIP code<input type="text" name="zip" inputmode="numeric" pattern="[0-9]{5}" maxlength="5" autocomplete="postal-code" required></label>
+  <label>Water source
+    <select name="water_source">
+      <option>City water</option>
+      <option>Private well</option>
+      <option>Not sure</option>
+    </select>
+  </label>
+  <label>What's bothering you most? <span class="optional">(optional)</span>
+    <textarea name="message" rows="3" placeholder="Spots on dishes, dry skin, taste, scale on fixtures..."></textarea>
+  </label>
+  <button class="btn btn--primary btn--block btn--lg" type="submit">Schedule My Free Test</button>
+  <p class="lead-form__fine">No obligation. We'll never share your info.</p>
+</form>
