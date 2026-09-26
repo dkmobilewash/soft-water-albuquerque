@@ -28,6 +28,23 @@ function parseBody(req) {
 }
 
 module.exports = async (req, res) => {
+  // Setup check: GET /api/lead?check shows which settings are present (never their values).
+  if (req.method === 'GET' && req.query && 'check' in req.query) {
+    const from = process.env.LEAD_FROM_EMAIL || '';
+    const fromDomain = (from.match(/@([^>\s]+)/) || [])[1] || null;
+    return res.status(200).json({
+      RESEND_API_KEY: Boolean(process.env.RESEND_API_KEY),
+      LEAD_TO_EMAIL: Boolean(process.env.LEAD_TO_EMAIL),
+      LEAD_FROM_EMAIL: Boolean(from),
+      senderDomain: fromDomain,
+      note: fromDomain === 'resend.dev'
+        ? 'Test sender: Resend only delivers to the email address your Resend account was created with.'
+        : fromDomain
+          ? `The domain ${fromDomain} must show "Verified" in Resend → Domains.`
+          : 'LEAD_FROM_EMAIL is missing or has no @domain.',
+    });
+  }
+
   if (req.method !== 'POST') {
     res.setHeader('Allow', 'POST');
     return res.status(405).json({ ok: false, error: 'Method not allowed' });
@@ -75,6 +92,8 @@ module.exports = async (req, res) => {
       }),
     });
     if (!r.ok) {
+      // Visible in Vercel → Logs. Common causes: sender domain not verified in Resend (403),
+      // or a test sender (onboarding@resend.dev) sending to an address other than the account owner.
       console.error('Resend error', r.status, await r.text());
       return fail(502, 'Could not send your request.');
     }
