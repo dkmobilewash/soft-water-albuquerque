@@ -29,10 +29,34 @@ function parseBody(req) {
 
 module.exports = async (req, res) => {
   // Setup check: GET /api/lead?check shows which settings are present (never their values).
+  // GET /api/lead?check&send=<your LEAD_TO_EMAIL address> also sends a test email and returns
+  // Resend's reply. Requiring the destination address keeps strangers from triggering it.
   if (req.method === 'GET' && req.query && 'check' in req.query) {
     const from = process.env.LEAD_FROM_EMAIL || '';
     const fromDomain = (from.match(/@([^>\s]+)/) || [])[1] || null;
+    const to = (process.env.LEAD_TO_EMAIL || '').split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+    const send = String(req.query.send || '').trim().toLowerCase();
+
+    let testEmail;
+    if (send) {
+      if (!to.includes(send)) {
+        testEmail = { sent: false, reason: 'send= must match the address in LEAD_TO_EMAIL.' };
+      } else {
+        try {
+          const r = await fetch('https://api.resend.com/emails', {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from, to: [send], subject: 'Test from your website form', text: 'If you can read this, website leads will reach you.' }),
+          });
+          testEmail = { sent: r.ok, resendStatus: r.status, resendReply: await r.json().catch(() => null) };
+        } catch (err) {
+          testEmail = { sent: false, reason: `Could not reach Resend: ${err.message}` };
+        }
+      }
+    }
+
     return res.status(200).json({
+      ...(testEmail && { testEmail }),
       RESEND_API_KEY: Boolean(process.env.RESEND_API_KEY),
       LEAD_TO_EMAIL: Boolean(process.env.LEAD_TO_EMAIL),
       LEAD_FROM_EMAIL: Boolean(from),
