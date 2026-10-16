@@ -10,7 +10,7 @@ free on-site water test, service areas, reviews, FAQ, financing, and free-instal
 | `/` | `src/pages/index.html` — hero + lead form, trust strip, hard-water signs, packages, comparison, how it works, ABQ water, reviews, service areas, FAQ |
 | `/water-softeners/` | Softener product page + specs |
 | `/whole-home-filtration/` | Carbon / whole-home filtration |
-| `/drinking-water/` | Reverse osmosis + alkaline |
+| `/reverse-osmosis/` | Reverse osmosis + alkaline |
 | `/packages/` | 3 packages + comparison table |
 | `/free-water-test/` | Water test booking form |
 | `/service-areas/` | Bernalillo, Sandoval, Valencia/Torrance counties |
