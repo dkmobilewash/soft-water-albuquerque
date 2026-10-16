@@ -1,5 +1,5 @@
 // Zero-dependency static site builder.
-// Reads src/pages/*.html, wraps each in src/partials/layout.html, fills {{tokens}}
+// Reads src/pages/**/*.html, wraps each in src/partials/layout.html, fills {{tokens}}
 // from site.config.json, and writes clean URLs to dist/ (e.g. dist/about/index.html).
 const fs = require('fs');
 const path = require('path');
@@ -57,15 +57,117 @@ const vars = { ...config, year: new Date().getFullYear() };
 const pagesDir = path.join(SRC, 'pages');
 const urls = [];
 
-for (const file of fs.readdirSync(pagesDir).filter((f) => f.endsWith('.html'))) {
-  const slug = file.replace(/\.html$/, '');
-  const url = slug === 'index' ? '/' : `/${slug}/`;
-  const { meta, body } = parsePage(fs.readFileSync(path.join(pagesDir, file), 'utf8'));
+// Services × service areas. Pages at src/pages/{area}/index.html and src/pages/{area}/{service}.html
+// get breadcrumbs, schema and cross-links generated from this file.
+const loc = JSON.parse(read('data/locations.json'));
+const areaBySlug = Object.fromEntries(loc.areas.map((a) => [a.slug, a]));
+const serviceBySlug = Object.fromEntries(loc.services.map((s) => [s.slug, s]));
+const base = config.domain.replace(/\/$/, '');
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const short = (a) => a.short || a.name;
+const ldScript = (obj) => `<script type="application/ld+json">${JSON.stringify(obj)}</script>`;
+
+// Recursively list .html files under src/pages, as paths relative to it.
+function listPages(dir, rel = '') {
+  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+    e.isDirectory()
+      ? listPages(path.join(dir, e.name), path.posix.join(rel, e.name))
+      : e.name.endsWith('.html') ? [path.posix.join(rel, e.name)] : []
+  );
+}
+
+// "rio-rancho/water-softeners.html" → { area, service }; "rio-rancho/index.html" → { area }
+function locationOf(rel) {
+  const parts = rel.replace(/\.html$/, '').split('/');
+  if (parts.length !== 2 || !areaBySlug[parts[0]]) return null;
+  if (parts[1] === 'index') return { area: areaBySlug[parts[0]] };
+  if (serviceBySlug[parts[1]]) return { area: areaBySlug[parts[0]], service: serviceBySlug[parts[1]] };
+  return null;
+}
+
+function breadcrumbItems(lc) {
+  const items = [{ name: 'Home', url: '/' }, { name: 'Service Areas', url: '/service-areas/' }, { name: lc.area.name, url: `/${lc.area.slug}/` }];
+  if (lc.service) items.push({ name: lc.service.name, url: `/${lc.area.slug}/${lc.service.slug}/` });
+  return items;
+}
+
+function breadcrumbsHtml(lc) {
+  const items = breadcrumbItems(lc);
+  return `<nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container"><ol>${items
+    .map((it, i) => (i === items.length - 1 ? `<li aria-current="page">${esc(it.name)}</li>` : `<li><a href="${it.url}">${esc(it.name)}</a></li>`))
+    .join('')}</ol></div></nav>`;
+}
+
+const provider = { '@type': 'HomeAndConstructionBusiness', name: config.name, telephone: config.phone, url: base + '/' };
+
+function relatedHtml(lc, serviceOnly) {
+  const col = (title, links) =>
+    `<div><h3>${esc(title)}</h3><ul>${links.map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`).join('')}</ul></div>`;
+  let cols;
+  if (serviceOnly) {
+    cols = [col(`${serviceOnly.name} by area`, loc.areas.map((a) => [`/${a.slug}/${serviceOnly.slug}/`, `${serviceOnly.name} in ${short(a)}`]))];
+  } else if (lc.service) {
+    cols = [
+      col(`More for ${short(lc.area)}`, [[`/${lc.area.slug}/`, `Water treatment in ${short(lc.area)}`],
+        ...loc.services.filter((s) => s !== lc.service).map((s) => [`/${lc.area.slug}/${s.slug}/`, `${s.name} in ${short(lc.area)}`])]),
+      col(`${lc.service.name} in nearby areas`, loc.areas.filter((a) => a !== lc.area).map((a) => [`/${a.slug}/${lc.service.slug}/`, short(a)])),
+    ];
+  } else {
+    cols = [
+      col(`Our services in ${short(lc.area)}`, loc.services.map((s) => [`/${lc.area.slug}/${s.slug}/`, `${s.name} in ${short(lc.area)}`])),
+      col('Other areas we serve', loc.areas.filter((a) => a !== lc.area).map((a) => [`/${a.slug}/`, a.name])),
+    ];
+  }
+  return `<section class="related"><div class="container related__grid">${cols.join('')}</div></section>`;
+}
+
+// FAQPage schema from <details><summary>Q</summary>…A…</details> blocks
+function faqSchema(html) {
+  const text = (s) => s.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+  const qa = [...html.matchAll(/<details>\s*<summary>([\s\S]*?)<\/summary>([\s\S]*?)<\/details>/g)].map((m) => ({
+    '@type': 'Question', name: text(m[1]), acceptedAnswer: { '@type': 'Answer', text: text(m[2]) },
+  }));
+  return qa.length >= 2 ? { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: qa } : null;
+}
+
+const counts = { areas: 0, combos: 0 };
+
+for (const rel of listPages(pagesDir)) {
+  const slug = rel.replace(/\.html$/, '').replace(/(^|\/)index$/, '');
+  const url = slug === '' ? '/' : `/${slug}/`;
+  const { meta, body } = parsePage(fs.readFileSync(path.join(pagesDir, rel), 'utf8'));
+  const lc = locationOf(rel);
+  const mainService = serviceBySlug[slug];
+  if (lc) counts[lc.service ? 'combos' : 'areas']++;
 
   let content = body
     .replace('<!-- @cta -->', partials.cta)
     .replace('<!-- @packages -->', partials.packages)
-    .replace('<!-- @test-form -->', partials.testForm);
+    .replace('<!-- @test-form -->', partials.testForm)
+    .replace('<!-- @breadcrumbs -->', lc ? breadcrumbsHtml(lc) : '')
+    .replace('<!-- @related -->', lc ? relatedHtml(lc) : mainService ? relatedHtml(null, mainService) : '');
+
+  // Page-level structured data, built after token filling so values are final
+  const schemas = [];
+  if (lc) {
+    schemas.push({
+      '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+      itemListElement: breadcrumbItems(lc).map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, item: base + it.url })),
+    });
+  }
+  if (lc && lc.service) {
+    schemas.push({
+      '@context': 'https://schema.org', '@type': 'Service', serviceType: lc.service.schemaName,
+      name: `${lc.service.name} in ${lc.area.name}, NM`, url: base + url, provider,
+      areaServed: { '@type': 'Place', name: `${lc.area.name}, NM` },
+    });
+  } else if (mainService) {
+    schemas.push({
+      '@context': 'https://schema.org', '@type': 'Service', serviceType: mainService.schemaName,
+      name: mainService.schemaName, url: base + url, provider,
+      areaServed: loc.areas.map((a) => ({ '@type': 'Place', name: `${a.name}, NM` })),
+    });
+  }
 
   // Mark the current nav link
   const header = partials.header.replace(
@@ -82,17 +184,20 @@ for (const file of fs.readdirSync(pagesDir).filter((f) => f.endsWith('.html'))) 
     ...vars,
     pageTitle: fill(meta.title || config.name, vars),
     pageDescription: fill(meta.description || config.tagline, vars),
-    canonical: config.domain.replace(/\/$/, '') + url,
+    canonical: base + url,
   });
 
-  const outDir = slug === 'index' ? DIST : path.join(DIST, slug);
+  const faq = faqSchema(html);
+  if (faq) schemas.push(faq);
+  html = html.replace('{{> schema}}', schemas.map(ldScript).join('\n  '));
+
+  const outDir = path.join(DIST, slug);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
   urls.push(url);
 }
 
 // sitemap + robots
-const base = config.domain.replace(/\/$/, '');
 fs.writeFileSync(
   path.join(DIST, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
@@ -101,4 +206,5 @@ fs.writeFileSync(
 );
 fs.writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);
 
-console.log(`Built ${urls.length} pages → dist/`);
+const expected = { areas: loc.areas.length, combos: loc.areas.length * loc.services.length };
+console.log(`Built ${urls.length} pages → dist/ (area pages ${counts.areas}/${expected.areas}, service+area pages ${counts.combos}/${expected.combos})`);
