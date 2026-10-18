@@ -11,9 +11,14 @@
   "state": "NM",
   "zip": "87110",
   "hours": "Mon–Sat, 8am–6pm",
+  "openingHoursSchema": [
+    "Mo-Sa 08:00-18:00"
+  ],
   "license": "NM License #000000",
   "yearFounded": "2026",
   "domain": "https://www.softwateralbuquerque.com",
+  "sameAs": [],
+  "geo": null,
   "price": {
     "softener": "$2,495",
     "softenerRegular": "$3,995",
@@ -23,5 +28,6 @@
     "completeRegular": "$7,650",
     "ro": "$895",
     "financing": "$59/mo"
-  }
+  },
+  "_schemaNote": "sameAs: full URLs of your Google Business Profile, Facebook, Yelp, etc. geo: {\"latitude\": 35.1, \"longitude\": -106.6} of the real business address (leave null until the address is real)."
 }

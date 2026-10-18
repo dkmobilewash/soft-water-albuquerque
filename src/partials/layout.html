@@ -5,36 +5,26 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{pageTitle}}</title>
   <meta name="description" content="{{pageDescription}}">
-  <link rel="canonical" href="{{canonical}}">
+  {{> robots}}<link rel="canonical" href="{{canonical}}">
+  <meta property="og:site_name" content="{{name}}">
+  <meta property="og:locale" content="en_US">
+  <meta property="og:type" content="website">
   <meta property="og:title" content="{{pageTitle}}">
   <meta property="og:description" content="{{pageDescription}}">
-  <meta property="og:type" content="website">
   <meta property="og:url" content="{{canonical}}">
+  <meta property="og:image" content="{{domain}}/assets/img/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="{{name}}: water softeners, filtration and reverse osmosis in Albuquerque">
+  <meta name="twitter:card" content="summary_large_image">
+  <link rel="icon" href="/favicon.ico" sizes="48x48">
   <link rel="icon" href="/assets/img/favicon.svg" type="image/svg+xml">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="apple-touch-icon" href="/assets/img/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
+  <meta name="theme-color" content="#0a2e4a">
+  <link rel="preload" href="/assets/fonts/inter-var.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="/assets/fonts/outfit-var.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="/assets/css/styles.css">
-  <script type="application/ld+json">
-  {
-    "@context": "https://schema.org",
-    "@type": "HomeAndConstructionBusiness",
-    "name": "{{name}}",
-    "telephone": "{{phone}}",
-    "email": "{{email}}",
-    "url": "{{domain}}",
-    "address": {
-      "@type": "PostalAddress",
-      "streetAddress": "{{address}}",
-      "addressLocality": "{{city}}",
-      "addressRegion": "{{state}}",
-      "postalCode": "{{zip}}",
-      "addressCountry": "US"
-    },
-    "areaServed": ["Albuquerque", "Rio Rancho", "Corrales", "Los Ranchos de Albuquerque", "Bernalillo", "Placitas", "Los Lunas", "Belen", "Bosque Farms", "Tijeras", "Edgewood"],
-    "openingHours": "Mo-Sa 08:00-18:00"
-  }
-  </script>
   {{> schema}}
 </head>
 <body>

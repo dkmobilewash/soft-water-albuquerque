@@ -2,6 +2,7 @@
 // Reads src/pages/**/*.html, wraps each in src/partials/layout.html, fills {{tokens}}
 // from site.config.json, and writes clean URLs to dist/ (e.g. dist/about/index.html).
 const fs = require('fs');
+const crypto = require('crypto');
 const path = require('path');
 
 const ROOT = __dirname;
@@ -52,10 +53,18 @@ function copyDir(from, to) {
 
 fs.rmSync(DIST, { recursive: true, force: true });
 copyDir(path.join(ROOT, 'assets'), path.join(DIST, 'assets'));
+// Files that must live at the site root (favicon.ico, site.webmanifest)
+copyDir(path.join(ROOT, 'static'), DIST);
 
 const vars = { ...config, year: new Date().getFullYear() };
 const pagesDir = path.join(SRC, 'pages');
 const urls = [];
+
+// Sitemap <lastmod>: a page's date changes only when its built HTML changes.
+// Hashes are stored in src/data/lastmod.json; commit that file after building.
+const LASTMOD_FILE = path.join(SRC, 'data/lastmod.json');
+const lastmod = fs.existsSync(LASTMOD_FILE) ? JSON.parse(fs.readFileSync(LASTMOD_FILE, 'utf8')) : {};
+const today = new Date().toISOString().slice(0, 10);
 
 // Services × service areas. Pages at src/pages/{area}/index.html and src/pages/{area}/{service}.html
 // get breadcrumbs, schema and cross-links generated from this file.
@@ -98,7 +107,26 @@ function breadcrumbsHtml(lc) {
     .join('')}</ol></div></nav>`;
 }
 
-const provider = { '@type': 'HomeAndConstructionBusiness', name: config.name, telephone: config.phone, url: base + '/' };
+const businessId = base + '/#business';
+const provider = { '@id': businessId };
+
+// LocalBusiness schema on every page, built from site.config.json; optional fields are left out when empty
+// Selling prices only: skip crossed-out "Regular" prices and the monthly financing figure
+const prices = Object.entries(config.price || {})
+  .filter(([k]) => !/regular|financing/i.test(k))
+  .map(([, p]) => Number(String(p).replace(/[^0-9.]/g, '')))
+  .filter((n) => n > 0);
+const business = {
+  '@context': 'https://schema.org', '@type': 'HomeAndConstructionBusiness', '@id': businessId,
+  name: config.name, url: base + '/', telephone: config.phone, email: config.email,
+  logo: base + '/assets/img/icon-512.png', image: base + '/assets/img/og-image.png',
+  address: { '@type': 'PostalAddress', streetAddress: config.address, addressLocality: config.city, addressRegion: config.state, postalCode: config.zip, addressCountry: 'US' },
+  ...(config.geo && { geo: { '@type': 'GeoCoordinates', ...config.geo } }),
+  areaServed: loc.areas.map((a) => ({ '@type': 'Place', name: `${a.name}, NM` })),
+  ...(config.openingHoursSchema && config.openingHoursSchema.length && { openingHours: config.openingHoursSchema }),
+  ...(prices.length && { priceRange: `$${Math.min(...prices).toLocaleString('en-US')}–$${Math.max(...prices).toLocaleString('en-US')}` }),
+  ...(config.sameAs && config.sameAs.length && { sameAs: config.sameAs }),
+};
 
 function relatedHtml(lc, serviceOnly) {
   const col = (title, links) =>
@@ -134,6 +162,7 @@ const counts = { areas: 0, combos: 0 };
 
 for (const rel of listPages(pagesDir)) {
   const slug = rel.replace(/\.html$/, '').replace(/(^|\/)index$/, '');
+  const is404 = slug === '404';
   const url = slug === '' ? '/' : `/${slug}/`;
   const { meta, body } = parsePage(fs.readFileSync(path.join(pagesDir, rel), 'utf8'));
   const lc = locationOf(rel);
@@ -148,7 +177,8 @@ for (const rel of listPages(pagesDir)) {
     .replace('<!-- @related -->', lc ? relatedHtml(lc) : mainService ? relatedHtml(null, mainService) : '');
 
   // Page-level structured data, built after token filling so values are final
-  const schemas = [];
+  const schemas = [business];
+  if (url === '/') schemas.push({ '@context': 'https://schema.org', '@type': 'WebSite', '@id': base + '/#website', name: config.name, url: base + '/', publisher: { '@id': businessId } });
   if (lc) {
     schemas.push({
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
@@ -190,18 +220,32 @@ for (const rel of listPages(pagesDir)) {
   const faq = faqSchema(html);
   if (faq) schemas.push(faq);
   html = html.replace('{{> schema}}', schemas.map(ldScript).join('\n  '));
+  const noindex = is404 || /noindex/i.test(meta.robots || '');
+  html = html.replace('{{> robots}}', noindex ? '<meta name="robots" content="noindex, follow">\n  ' : '');
 
+  if (is404) {
+    // Vercel serves dist/404.html for unknown URLs; it has no canonical address of its own
+    html = html.replace(/\s*<link rel="canonical"[^>]*>/, '').replace(/\s*<meta property="og:url"[^>]*>/, '');
+    fs.writeFileSync(path.join(DIST, '404.html'), html);
+    continue;
+  }
   const outDir = path.join(DIST, slug);
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
+  if (noindex) continue;
+
+  const hash = crypto.createHash('sha1').update(html).digest('hex');
+  if (!lastmod[url] || lastmod[url].hash !== hash) lastmod[url] = { hash, date: today };
   urls.push(url);
 }
 
 // sitemap + robots
+for (const u of Object.keys(lastmod)) if (!urls.includes(u)) delete lastmod[u];
+fs.writeFileSync(LASTMOD_FILE, JSON.stringify(Object.fromEntries(Object.entries(lastmod).sort()), null, 2) + '\n');
 fs.writeFileSync(
   path.join(DIST, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls
-    .map((u) => `  <url><loc>${base}${u}</loc></url>`)
+    .map((u) => `  <url><loc>${base}${u}</loc><lastmod>${lastmod[u].date}</lastmod></url>`)
     .join('\n')}\n</urlset>\n`
 );
 fs.writeFileSync(path.join(DIST, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${base}/sitemap.xml\n`);

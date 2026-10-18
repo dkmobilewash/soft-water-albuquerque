@@ -22,6 +22,12 @@ free on-site water test, service areas, reviews, FAQ, financing, and free-instal
 - **Page content:** `src/pages/*.html`. The comment at the top sets the page `<title>` and meta description.
 - **Styles:** `assets/css/styles.css`. Colors are CSS variables at the top.
 
+- **Hide a page from Google:** add `robots: noindex` to its front matter. It gets a noindex tag and is left out of the sitemap.
+- **Schema extras** (`site.config.json`): `sameAs` (your Google Business Profile, Facebook, Yelp… URLs), `geo` (latitude/longitude of the real address), `openingHoursSchema`. Empty values are simply left out.
+- **Sitemap dates:** `src/data/lastmod.json` records when each page last changed. The build updates it, so commit it along with your page edits.
+- **Root files** (`favicon.ico`, `site.webmanifest`) live in `static/`. The sharing image and PNG icons are generated from the logo by `node scripts/make-images.js` (needs the `playwright` package); rerun it after changing the logo or business name.
+- Fonts (Inter, Outfit) are self-hosted in `assets/fonts/` under the SIL Open Font License.
+
 Search for `PLACEHOLDER` to find content that still needs real info: reviews, owner story, financing partner.
 
 ## Build & preview
