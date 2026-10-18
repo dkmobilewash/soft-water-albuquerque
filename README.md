@@ -22,6 +22,8 @@ free on-site water test, service areas, reviews, FAQ, financing, and free-instal
 - **Page content:** `src/pages/*.html`. The comment at the top sets the page `<title>` and meta description.
 - **Styles:** `assets/css/styles.css`. Colors are CSS variables at the top.
 
+- **Guides** live in `src/pages/guides/`. Front matter: `type: article` and `published: YYYY-MM-DD` add Article schema; `crumb:` sets the short name used in breadcrumbs and link lists. To feature a guide in the "Helpful guides" links, add its slug to `guides` / `areaGuides` in `src/data/locations.json`.
+- **Breadcrumbs** are added automatically to every inner page (with BreadcrumbList schema). `offers: packages` on a page adds the package OfferCatalog schema.
 - **Hide a page from Google:** add `robots: noindex` to its front matter. It gets a noindex tag and is left out of the sitemap.
 - **Schema extras** (`site.config.json`): `sameAs` (your Google Business Profile, Facebook, Yelp… URLs), `geo` (latitude/longitude of the real address), `openingHoursSchema`. Empty values are simply left out.
 - **Sitemap dates:** `src/data/lastmod.json` records when each page last changed. The build updates it, so commit it along with your page edits.

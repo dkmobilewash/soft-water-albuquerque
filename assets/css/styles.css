@@ -363,3 +363,35 @@ p { margin: 0 0 1em; }
   .fact-list dd { margin-bottom: .6rem; }
   .related ul { columns: 1; }
 }
+
+/* ---------- Guides ---------- */
+.article-hero { background: linear-gradient(160deg, #e7f5fb 0%, var(--cream) 100%); padding: 3.5rem 0 2.5rem; }
+.article-hero h1 { font-size: clamp(2rem, 4vw, 3rem); max-width: 22ch; }
+.article-hero .page-hero__lead { max-width: 42rem; }
+.article-meta { color: var(--muted); font-size: .9rem; margin: 1.25rem 0 0; }
+.article { padding: 3rem 0 4rem; }
+.article__body { max-width: 44rem; }
+.article__body > p, .article__body li { font-size: 1.06rem; line-height: 1.75; }
+.article__body h2 { margin-top: 2.6rem; font-size: clamp(1.45rem, 2.4vw, 1.85rem); }
+.article__body h3 { margin-top: 1.8rem; }
+.article__body ul, .article__body ol { padding-left: 1.3rem; margin: 0 0 1.2rem; }
+.article__body li { margin-bottom: .45rem; }
+.article__body .table-wrap { margin: 1.5rem 0; }
+.data-table { width: 100%; border-collapse: collapse; font-size: .97rem; background: #fff; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+.data-table th, .data-table td { padding: .75rem .9rem; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; }
+.data-table thead th { background: var(--navy); color: #fff; font-family: var(--font-display); font-weight: 600; }
+.data-table tbody tr:nth-child(even) td { background: #f8fbfd; }
+.toc { background: var(--tint); border-radius: var(--radius); padding: 1.1rem 1.4rem; margin: 0 0 2rem; }
+.toc p { font-weight: 700; color: var(--navy); margin: 0 0 .4rem; }
+.toc ol { margin: 0; padding-left: 1.2rem; }
+.toc li { font-size: .97rem !important; margin-bottom: .25rem; }
+.sources { margin-top: 3rem; padding-top: 1.5rem; border-top: 1px solid var(--line); }
+.sources h2 { font-size: 1.15rem !important; margin-top: 0 !important; }
+.sources li { font-size: .92rem !important; color: var(--muted); }
+.guide-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+.guide-card { display: flex; flex-direction: column; background: #fff; border: 1px solid var(--line); border-radius: var(--radius-lg); padding: 1.75rem; text-decoration: none; color: var(--ink); transition: box-shadow .2s, transform .2s; }
+.guide-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); color: var(--ink); }
+.guide-card .eyebrow { margin-bottom: .5rem; }
+.guide-card h2 { font-size: 1.3rem; }
+.guide-card p { color: var(--muted); margin: 0 0 1rem; flex: 1; }
+.guide-card span.more { color: var(--turquoise); font-weight: 700; }

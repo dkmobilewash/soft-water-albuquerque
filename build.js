@@ -100,8 +100,7 @@ function breadcrumbItems(lc) {
   return items;
 }
 
-function breadcrumbsHtml(lc) {
-  const items = breadcrumbItems(lc);
+function breadcrumbsHtml(items) {
   return `<nav class="breadcrumbs" aria-label="Breadcrumb"><div class="container"><ol>${items
     .map((it, i) => (i === items.length - 1 ? `<li aria-current="page">${esc(it.name)}</li>` : `<li><a href="${it.url}">${esc(it.name)}</a></li>`))
     .join('')}</ol></div></nav>`;
@@ -131,6 +130,9 @@ const business = {
 function relatedHtml(lc, serviceOnly) {
   const col = (title, links) =>
     `<div><h3>${esc(title)}</h3><ul>${links.map(([href, label]) => `<li><a href="${href}">${esc(label)}</a></li>`).join('')}</ul></div>`;
+  const svc = serviceOnly || (lc && lc.service);
+  const guideSlugs = (svc ? svc.guides : loc.areaGuides) || [];
+  const guides = guideSlugs.map((g) => `/guides/${g}/`).filter((u) => pageMeta[u]).map((u) => [u, crumbName(pageMeta[u])]);
   let cols;
   if (serviceOnly) {
     cols = [col(`${serviceOnly.name} by area`, loc.areas.map((a) => [`/${a.slug}/${serviceOnly.slug}/`, `${serviceOnly.name} in ${short(a)}`]))];
@@ -146,6 +148,7 @@ function relatedHtml(lc, serviceOnly) {
       col('Other areas we serve', loc.areas.filter((a) => a !== lc.area).map((a) => [`/${a.slug}/`, a.name])),
     ];
   }
+  if (guides.length) cols.push(col('Helpful guides', guides));
   return `<section class="related"><div class="container related__grid">${cols.join('')}</div></section>`;
 }
 
@@ -160,6 +163,23 @@ function faqSchema(html) {
 
 const counts = { areas: 0, combos: 0 };
 
+// First pass: every page's front matter, keyed by URL (for breadcrumb names and guide links)
+const urlOf = (rel) => { const s = rel.replace(/\.html$/, '').replace(/(^|\/)index$/, ''); return s === '' ? '/' : `/${s}/`; };
+const pageMeta = {};
+for (const rel of listPages(pagesDir)) pageMeta[urlOf(rel)] = parsePage(fs.readFileSync(path.join(pagesDir, rel), 'utf8')).meta;
+function crumbName(meta) { return meta.crumb || fill(meta.title || '', vars).split(' | ')[0]; }
+
+// Home › parent pages › this page, for pages outside the service-area tree
+function genericCrumbs(url) {
+  const parts = url.split('/').filter(Boolean);
+  const items = [{ name: 'Home', url: '/' }];
+  parts.forEach((_, i) => {
+    const u = '/' + parts.slice(0, i + 1).join('/') + '/';
+    if (pageMeta[u]) items.push({ name: crumbName(pageMeta[u]), url: u });
+  });
+  return items;
+}
+
 for (const rel of listPages(pagesDir)) {
   const slug = rel.replace(/\.html$/, '').replace(/(^|\/)index$/, '');
   const is404 = slug === '404';
@@ -167,22 +187,25 @@ for (const rel of listPages(pagesDir)) {
   const { meta, body } = parsePage(fs.readFileSync(path.join(pagesDir, rel), 'utf8'));
   const lc = locationOf(rel);
   const mainService = serviceBySlug[slug];
+  const noindex = is404 || /noindex/i.test(meta.robots || '');
+  const crumbs = lc ? breadcrumbItems(lc) : url !== '/' && !noindex ? genericCrumbs(url) : null;
   if (lc) counts[lc.service ? 'combos' : 'areas']++;
 
   let content = body
     .replace('<!-- @cta -->', partials.cta)
     .replace('<!-- @packages -->', partials.packages)
     .replace('<!-- @test-form -->', partials.testForm)
-    .replace('<!-- @breadcrumbs -->', lc ? breadcrumbsHtml(lc) : '')
+    .replace('<!-- @breadcrumbs -->', crumbs ? breadcrumbsHtml(crumbs) : '')
     .replace('<!-- @related -->', lc ? relatedHtml(lc) : mainService ? relatedHtml(null, mainService) : '');
+  if (crumbs && !body.includes('<!-- @breadcrumbs -->')) content = breadcrumbsHtml(crumbs) + '\n' + content;
 
   // Page-level structured data, built after token filling so values are final
   const schemas = [business];
   if (url === '/') schemas.push({ '@context': 'https://schema.org', '@type': 'WebSite', '@id': base + '/#website', name: config.name, url: base + '/', publisher: { '@id': businessId } });
-  if (lc) {
+  if (crumbs) {
     schemas.push({
       '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-      itemListElement: breadcrumbItems(lc).map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, item: base + it.url })),
+      itemListElement: crumbs.map((it, i) => ({ '@type': 'ListItem', position: i + 1, name: it.name, item: base + it.url })),
     });
   }
   if (lc && lc.service) {
@@ -196,6 +219,21 @@ for (const rel of listPages(pagesDir)) {
       '@context': 'https://schema.org', '@type': 'Service', serviceType: mainService.schemaName,
       name: mainService.schemaName, url: base + url, provider,
       areaServed: loc.areas.map((a) => ({ '@type': 'Place', name: `${a.name}, NM` })),
+    });
+  }
+  if (meta.offers === 'packages') {
+    // The three installed packages, priced from site.config.json
+    const num = (p) => String(p).replace(/[^0-9.]/g, '');
+    schemas.push({
+      '@context': 'https://schema.org', '@type': 'OfferCatalog', name: 'Water treatment packages', url: base + url,
+      itemListElement: [
+        ['Soft Water Essentials', 'Whole-home 48,000-grain water softener, installed', config.price.softener],
+        ['Soft + Filtered Home', 'Whole-home softener with catalytic carbon filtration in one tank, installed', config.price.softenerFilter],
+        ['Complete Home System', 'Softener, carbon filtration and under-sink reverse osmosis with alkaline stage, installed', config.price.complete],
+      ].map(([name, description, price]) => ({
+        '@type': 'Offer', price: num(price), priceCurrency: 'USD', availability: 'https://schema.org/InStock', seller: { '@id': businessId },
+        itemOffered: { '@type': 'Service', name, description, provider: { '@id': businessId } },
+      })),
     });
   }
 
@@ -219,9 +257,22 @@ for (const rel of listPages(pagesDir)) {
 
   const faq = faqSchema(html);
   if (faq) schemas.push(faq);
-  html = html.replace('{{> schema}}', schemas.map(ldScript).join('\n  '));
-  const noindex = is404 || /noindex/i.test(meta.robots || '');
   html = html.replace('{{> robots}}', noindex ? '<meta name="robots" content="noindex, follow">\n  ' : '');
+
+  // lastmod comes from the page HTML before structured data is added (the schema itself carries the date)
+  if (!noindex) {
+    const hash = crypto.createHash('sha1').update(html).digest('hex');
+    if (!lastmod[url] || lastmod[url].hash !== hash) lastmod[url] = { hash, date: today };
+  }
+  if (meta.type === 'article') {
+    schemas.push({
+      '@context': 'https://schema.org', '@type': 'Article', headline: crumbName(meta), description: fill(meta.description || '', vars),
+      url: base + url, mainEntityOfPage: base + url, image: base + '/assets/img/og-image.png',
+      datePublished: meta.published, dateModified: (lastmod[url] && lastmod[url].date) || meta.published,
+      author: { '@type': 'Organization', '@id': businessId, name: config.name }, publisher: { '@id': businessId },
+    });
+  }
+  html = html.replace('{{> schema}}', schemas.map(ldScript).join('\n  '));
 
   if (is404) {
     // Vercel serves dist/404.html for unknown URLs; it has no canonical address of its own
@@ -233,9 +284,6 @@ for (const rel of listPages(pagesDir)) {
   fs.mkdirSync(outDir, { recursive: true });
   fs.writeFileSync(path.join(outDir, 'index.html'), html);
   if (noindex) continue;
-
-  const hash = crypto.createHash('sha1').update(html).digest('hex');
-  if (!lastmod[url] || lastmod[url].hash !== hash) lastmod[url] = { hash, date: today };
   urls.push(url);
 }
 

@@ -1,21 +1,97 @@
 {
-  "_note": "Services and service areas used to generate breadcrumbs, schema and cross-links for /{area}/ and /{area}/{service}/ pages.",
+  "_note": "Services and service areas used to generate breadcrumbs, schema and cross-links for /{area}/ and /{area}/{service}/ pages. \"guides\" / \"areaGuides\" list /guides/{slug}/ pages linked in each page's \"Helpful guides\" column.",
   "services": [
-    { "slug": "water-softeners", "name": "Water Softeners", "schemaName": "Water softener installation" },
-    { "slug": "whole-home-filtration", "name": "Whole-Home Filtration", "schemaName": "Whole-home water filtration installation" },
-    { "slug": "reverse-osmosis", "name": "Reverse Osmosis", "schemaName": "Reverse osmosis drinking water system installation" }
+    {
+      "slug": "water-softeners",
+      "name": "Water Softeners",
+      "schemaName": "Water softener installation",
+      "guides": [
+        "water-softener-cost-albuquerque",
+        "water-softener-vs-salt-free-conditioner",
+        "water-softener-tankless-water-heater"
+      ]
+    },
+    {
+      "slug": "whole-home-filtration",
+      "name": "Whole-Home Filtration",
+      "schemaName": "Whole-home water filtration installation",
+      "guides": [
+        "how-to-read-your-water-quality-report",
+        "is-albuquerque-water-hard"
+      ]
+    },
+    {
+      "slug": "reverse-osmosis",
+      "name": "Reverse Osmosis",
+      "schemaName": "Reverse osmosis drinking water system installation",
+      "guides": [
+        "well-water-testing-arsenic-new-mexico",
+        "how-to-read-your-water-quality-report"
+      ]
+    }
   ],
   "areas": [
-    { "slug": "albuquerque", "name": "Albuquerque", "county": "Bernalillo County" },
-    { "slug": "los-ranchos", "name": "Los Ranchos de Albuquerque", "short": "Los Ranchos", "county": "Bernalillo County" },
-    { "slug": "east-mountains", "name": "Tijeras & the East Mountains", "short": "East Mountains", "county": "Bernalillo County" },
-    { "slug": "rio-rancho", "name": "Rio Rancho", "county": "Sandoval County" },
-    { "slug": "corrales", "name": "Corrales", "county": "Sandoval County" },
-    { "slug": "bernalillo", "name": "Bernalillo", "county": "Sandoval County" },
-    { "slug": "placitas", "name": "Placitas", "county": "Sandoval County" },
-    { "slug": "los-lunas", "name": "Los Lunas", "county": "Valencia County" },
-    { "slug": "belen", "name": "Belen", "county": "Valencia County" },
-    { "slug": "bosque-farms", "name": "Bosque Farms", "county": "Valencia County" },
-    { "slug": "edgewood", "name": "Edgewood", "county": "Santa Fe County" }
+    {
+      "slug": "albuquerque",
+      "name": "Albuquerque",
+      "county": "Bernalillo County"
+    },
+    {
+      "slug": "los-ranchos",
+      "name": "Los Ranchos de Albuquerque",
+      "short": "Los Ranchos",
+      "county": "Bernalillo County"
+    },
+    {
+      "slug": "east-mountains",
+      "name": "Tijeras & the East Mountains",
+      "short": "East Mountains",
+      "county": "Bernalillo County"
+    },
+    {
+      "slug": "rio-rancho",
+      "name": "Rio Rancho",
+      "county": "Sandoval County"
+    },
+    {
+      "slug": "corrales",
+      "name": "Corrales",
+      "county": "Sandoval County"
+    },
+    {
+      "slug": "bernalillo",
+      "name": "Bernalillo",
+      "county": "Sandoval County"
+    },
+    {
+      "slug": "placitas",
+      "name": "Placitas",
+      "county": "Sandoval County"
+    },
+    {
+      "slug": "los-lunas",
+      "name": "Los Lunas",
+      "county": "Valencia County"
+    },
+    {
+      "slug": "belen",
+      "name": "Belen",
+      "county": "Valencia County"
+    },
+    {
+      "slug": "bosque-farms",
+      "name": "Bosque Farms",
+      "county": "Valencia County"
+    },
+    {
+      "slug": "edgewood",
+      "name": "Edgewood",
+      "county": "Santa Fe County"
+    }
+  ],
+  "areaGuides": [
+    "is-albuquerque-water-hard",
+    "how-to-read-your-water-quality-report",
+    "well-water-testing-arsenic-new-mexico"
   ]
 }
